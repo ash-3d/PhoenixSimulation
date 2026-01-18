@@ -26,8 +26,8 @@ PhoenixSimulation/
 │   ├── builds.py                  # Build utilities
 │   ├── fetch_batch_failure_logs.py # Debug failed batch jobs
 │   └── test_mask_generation.py    # Mask generation tests
-├── DES_thermal_simulation/ # Rust thermal simulation (git submodule)
-│   ├── src/                       # Rust source code
+├── DES_thermal_simulation/ # Rust thermal simulation (MIT license)
+│   ├── src/                       # Thanks to https://github.com/linus131/DES_thermal_model
 │   ├── Cargo.toml                 # Rust dependencies
 │   └── inputfiles/                # Example input files
 ├── DES_docs/               # Research documentation
@@ -194,10 +194,6 @@ source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 uv pip install -r requirements.txt
 ```
 
-**DES_thermal_simulation submodule :**
-```bash
-git submodule update --remote DES_thermal_simulation
-```
 
 ## notes :
 * **Quotas** (europe-west4 + global):
