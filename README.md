@@ -1,4 +1,10 @@
-* After each edit identify things to simplify and reduce code
+This work is based on Sunil Bhandaris R code in `https://github.com/linus131/DES_thermal_model`
+It's a wrapper around it using GCP with a UI, visualization of the printing process.
+Most of the project is made using AI assisted coding.
+
+Further development ideas:
+* Thermal structural coupling analysis can be done using FEA similation tools (eg. Calculix) to understand the warping behaviour.
+* Save run costs by using spot/on demand based on  toolpath length  (longer runs=risk of interruptions in SPOT)
 
 ## Project File Structure
 
@@ -34,10 +40,10 @@ PhoenixSimulation/
 │   ├── des_outputs.txt            # Output format documentation
 │   ├── paper_materials-13-04985.pdf  # Original research paper
 │   └── *.jpeg                     # Diagrams (flowcharts, element visualization)
-├── material_variants/      # Material property bundles
-│   ├── ABS/                       # ABS conductivity & heat capacity CSVs
-│   ├── PC/                        # PC conductivity & heat capacity CSVs
-│   └── PEEK/                      # PEEK conductivity & heat capacity CSVs
+├── material_variants/      # Material property bundles (conductivity & heat capacity CSVs)
+│   ├── ABS/                       
+│   ├── PC/                       
+│   └── PEEK/                    
 ├── projects/               # Working directory for processing projects
 │   └── <project_id>/              # Each project directory contains:
 │       ├── rust_code_input/           # Input files for Rust thermal simulation
@@ -194,17 +200,15 @@ source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 uv pip install -r requirements.txt
 ```
 
-
 ## notes :
-* **Quotas** (europe-west4 + global):
-  - `CPUS_ALL_REGIONS`: 128 ✅ approved (current jobs only use CPUs)
-  - `GPUS_ALL_REGIONS`: 2 ✅ approved (kept for future GPU runs, currently unused)
-* **Rendering mode**: Visualization stage now runs software rendering on n2-highmem-128 (GPU disabled); flip `USE_GPU=1` + Batch config if GPU acceleration returns
+* **Tested on available CPU/GPUs** (europe-west4 + global):
+  - `CPUS_ALL_REGIONS`: 128. 
+  - `GPUS_ALL_REGIONS`: 2. 
 * **Batch provisioning**: PROD jobs run on standard (non-preemptible) instances, DEV keeps SPOT nodes for cost savings
 * gcode file is related to path length etc so it affects time taken for simulation
 * wall.gcode size scales linearly with time taken . estimate time
 
-* Docs about FEA simulation input / DES rust simulation output (eg: elem_temps.csv) in: `./DES_docs/`
+* Docs about FEA simulation input / DES rust simulation output (eg: `elem_temps.csv`) in: `./DES_docs/`
   Includes original research paper and diagrams
 * case sensitivity issue on Linux
   The DES submodule has `Interpolator.rs` (capital I) but Rust code imports it as `mod interpolator;` (lowercase). we use Linux so create a symlink:
@@ -219,8 +223,6 @@ history:
 * Conda mayavi installation  took a lot of time and we switched to pyvista
 * tried cloud run jobs and  cloud run service before settling for cloud batch run
 
-### TODO
-  * Calculate length of toolpath first and choose spot if estimate is less than 1 hr
 
 ### OAuth Dev Setup Notes:
   * OAUTH_CLIENT_ID and OAUTH_CLIENT_SECRET for dev are set as Cloud Run environment variables.
