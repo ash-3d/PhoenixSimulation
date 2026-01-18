@@ -3,6 +3,10 @@ This project is based on [research work](https://doi.org/10.3390/ma13214985) don
 This project adds to their numerical model written in Rust: UI, visualization of the printing process, full GCP pipeline, optimized for speed and graphics rendering.
 Most of the project was made using AI-assisted coding.
 
+<video src="media/landing_vid.mp4" controls width="100%"></video>
+
+![Boat](media/boat.png)
+
 Further development ideas:
 * Thermal structural coupling analysis can be done using FEA simulation tools (e.g., Calculix) to understand the warping behaviour.
 * Save run costs by using spot/on-demand based on toolpath length (longer runs = risk of interruptions in SPOT).
@@ -33,10 +37,7 @@ PhoenixSimulation/
 │   ├── builds.py                  # Build utilities
 │   ├── fetch_batch_failure_logs.py # Debug failed batch jobs
 │   └── test_mask_generation.py    # Mask generation tests
-├── DES_thermal_simulation/ # Rust thermal simulation (MIT license)
-│   ├── src/                       # Thanks to https://github.com/linus131/DES_thermal_model
-│   ├── Cargo.toml                 # Rust dependencies
-│   └── inputfiles/                # Example input files
+├── DES_thermal_simulation/ # Rust thermal simulation copied from DES repo
 ├── DES_docs/               # Research documentation
 │   ├── des_outputs.txt            # Output format documentation
 │   ├── paper_materials-13-04985.pdf  # Original research paper
