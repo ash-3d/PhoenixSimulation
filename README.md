@@ -1,46 +1,62 @@
-* Don't read CSV files as a whole as an agent (code can, your context window is limited), just read like 10 lines
 * After each edit identify things to simplify and reduce code
-* Data shouldn't leave europe
 
 ## Project File Structure
 
 ```
-CITB4_python/
-├── fea_pyvista.py         # Main FEA processing script with PyVista visualization
+PhoenixSimulation/
 ├── app.py                  # Flask web application for file upload/download interface
+├── fea_pyvista.py          # Main FEA processing script with PyVista visualization
 ├── job_processor.py        # Cloud Batch processor script (runs pipeline stages)
 ├── make_animation.py       # Creates MP4 animations from generated frame sequences
-├── start.sh               # Container startup script
-├── cloudbuild.yaml        # CI/CD configuration for GitHub auto-deploy
-├── requirements.txt       # Python dependencies (Python 3.11+, tested with 3.13)
-├── environment.py         # Centralized runtime/env + Cloud Batch configuration
-├── env_targets.py         # DEV/PROD resource targets (buckets, services, prefixes)
-├── .python-version        # Python version specification for uv
-├── .envrc                 # direnv configuration for auto-activation
-├── README.md              # Project documentation
-├── USAGE.md               # Usage instructions
-├── DEPLOYMENT.md          # Complete deployment guide
-├── CLAUDE.md              # Development notes and commands (this file)
+├── environment.py          # Centralized runtime/env + Cloud Batch configuration
+├── env_targets.py          # DEV/PROD resource targets (buckets, services, prefixes)
+├── start.sh                # Container startup script
+├── Dockerfile              # Container build configuration
+├── cloudbuild.yaml         # CI/CD configuration for GitHub auto-deploy
+├── requirements.txt        # Python dependencies (Python 3.11+)
+├── README.md               # Project documentation (CLAUDE.md & AGENTS.md symlink here)
+├── DEPLOYMENT.md           # Complete deployment guide
+├── SETUP.md                # Initial setup instructions
+├── .gitignore              # Git ignore patterns
 ├── templates/
-│   └── index.html         # Flask web interface template
-├── projects/              # Working directory for processing projects
-│   └── 001/               # Example project directory
+│   └── index.html          # Flask web interface template
+├── scripts/                # Utility scripts
+│   ├── batch_jobs.py              # Cloud Batch job management
+│   ├── batch_jobs_interactive.py  # Interactive batch job tools
+│   ├── builds.py                  # Build utilities
+│   ├── fetch_batch_failure_logs.py # Debug failed batch jobs
+│   └── test_mask_generation.py    # Mask generation tests
+├── DES_thermal_simulation/ # Rust thermal simulation (git submodule)
+│   ├── src/                       # Rust source code
+│   ├── Cargo.toml                 # Rust dependencies
+│   └── inputfiles/                # Example input files
+├── DES_docs/               # Research documentation
+│   ├── des_outputs.txt            # Output format documentation
+│   ├── paper_materials-13-04985.pdf  # Original research paper
+│   └── *.jpeg                     # Diagrams (flowcharts, element visualization)
+├── material_variants/      # Material property bundles
+│   ├── ABS/                       # ABS conductivity & heat capacity CSVs
+│   ├── PC/                        # PC conductivity & heat capacity CSVs
+│   └── PEEK/                      # PEEK conductivity & heat capacity CSVs
+├── projects/               # Working directory for processing projects
+│   └── <project_id>/              # Each project directory contains:
 │       ├── rust_code_input/           # Input files for Rust thermal simulation
 │       │   ├── conductivity.csv       # Material thermal conductivity data
 │       │   ├── sp_heat_cap_data.csv   # Material specific heat capacity data
 │       │   ├── Input_file.txt         # Simulation configuration
 │       │   └── wall.gcode             # G-code toolpath file
-│       ├── frame_generator_input/     # FEA data for visualization (output of Rust simulation)
+│       ├── frame_generator_input/     # FEA data (output of Rust simulation)
 │       │   ├── activation_times.csv   # Element activation timing data
 │       │   ├── elementfile.csv        # Element connectivity definitions
-│       │   ├── node_temps.csv         # Node temperature data (huge)
+│       │   ├── node_temps.csv         # Node temperature data (large)
 │       │   └── nodefile.csv           # Node coordinate definitions
-│       ├── frames_filtered_active_only/  # Generated visualization frames (PNG sequence)
-│       ├── fea_animation.mp4          # Final animation video (at project root)
-│       ├── hot_cold_mask.png          # Hot/cold mask visualization (at project root)
-│       └── hot_cold_mask.3mf          # Hot/cold mask 3D model (at project root)
-├── fetch_batch_failure_logs.py  # Debug failed batch jobs (searches backwards from end, use --tail or --show-both-ends)
-├── material_variants/     # ABS/PC/PEEK conductivity & heat capacity CSV bundles
+│       ├── frames_filtered_active_only/  # Generated visualization frames (PNG)
+│       ├── fea_animation.mp4          # Final animation video
+│       ├── hot_cold_mask.png          # Hot/cold mask visualization
+│       ├── hot_cold_mask.3mf          # Hot/cold mask 3D model
+│       └── progress.json              # Job progress tracking
+├── docs/                   # Additional documentation
+└── scratch/                # Temporary working files
 ```
 
 ### Data Flow (Pipeline Stages)
@@ -192,8 +208,8 @@ git submodule update --remote DES_thermal_simulation
 * gcode file is related to path length etc so it affects time taken for simulation
 * wall.gcode size scales linearly with time taken . estimate time
 
-* Docs about fes simulation input / DES rust simulation output (eg: elem_temps.csv) (with illustrative images) in: ./DES_thermal_simulation/docs/
-  included Original research paper as well
+* Docs about FEA simulation input / DES rust simulation output (eg: elem_temps.csv) in: `./DES_docs/`
+  Includes original research paper and diagrams
 * case sensitivity issue on Linux
   The DES submodule has `Interpolator.rs` (capital I) but Rust code imports it as `mod interpolator;` (lowercase). we use Linux so create a symlink:
 `ln -sf Interpolator.rs interpolator.rs`
