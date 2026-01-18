@@ -1,6 +1,6 @@
-This work is based on [research work](https://doi.org/10.3390/ma13214985) done at University of Maine by Sunil Bhandari and Roberto Lopez-Anido in `https://github.com/linus131/DES_thermal_model`.
+This project is based on [research work](https://doi.org/10.3390/ma13214985) done at University of Maine by Sunil Bhandari and Roberto Lopez-Anido in `https://github.com/linus131/DES_thermal_model`.
 
-This project is a wrapper around it using GCP with a UI and visualization of the printing process, optimized for speed and graphics rendering.
+This project adds to their numerical model written in Rust: UI, visualization of the printing process, full GCP pipeline, optimized for speed and graphics rendering.
 Most of the project was made using AI-assisted coding.
 
 Further development ideas:
@@ -18,10 +18,10 @@ PhoenixSimulation/
 ├── environment.py          # Centralized runtime/env + Cloud Batch configuration
 ├── env_targets.py          # DEV/PROD resource targets (buckets, services, prefixes)
 ├── start.sh                # Container startup script
-├── Dockerfile              # Container build configuration
+├── Dockerfile              
 ├── cloudbuild.yaml         # CI/CD configuration for GitHub auto-deploy
-├── requirements.txt        # Python dependencies (Python 3.11+)
-├── README.md               # Project documentation (CLAUDE.md & AGENTS.md symlink here)
+├── requirements.txt        
+├── README.md               # Project documentation (CLAUDE.md/AGENTS.md symlink here)
 ├── DEPLOYMENT.md           # Complete deployment guide
 ├── SETUP.md                # Initial setup instructions
 ├── .gitignore              # Git ignore patterns
@@ -202,31 +202,27 @@ source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 uv pip install -r requirements.txt
 ```
 
-## notes :
+## Notes
 * **Tested on available CPU/GPUs** (europe-west4 + global):
-  - `CPUS_ALL_REGIONS`: 128. 
-  - `GPUS_ALL_REGIONS`: 2. 
-* **Batch provisioning**: PROD jobs run on standard (non-preemptible) instances, DEV keeps SPOT nodes for cost savings
-* gcode file is related to path length etc so it affects time taken for simulation
-* wall.gcode size scales linearly with time taken . estimate time
-
-* Docs about FEA simulation input / DES rust simulation output (eg: `elem_temps.csv`) in: `./DES_docs/`
-  Includes original research paper and diagrams
-* case sensitivity issue on Linux
-  The DES submodule has `Interpolator.rs` (capital I) but Rust code imports it as `mod interpolator;` (lowercase). we use Linux so create a symlink:
-`ln -sf Interpolator.rs interpolator.rs`
-* using direnv for local development
+  - `CPUS_ALL_REGIONS`: 128
+  - `GPUS_ALL_REGIONS`: 2
+* **Batch provisioning**: PROD jobs run on standard (non-preemptible) instances; DEV keeps SPOT nodes for cost savings.
+* G-code file is related to path length, etc., so it affects time taken for simulation.
+* `wall.gcode` size scales linearly with time taken. Use this to estimate time.
+* Docs about FEA simulation input / DES Rust simulation output (e.g., `elem_temps.csv`) are in `./DES_docs/`. Includes original research paper and diagrams.
+* **Case sensitivity issue on Linux**: The DES submodule has `Interpolator.rs` (capital I) but Rust code imports it as `mod interpolator;` (lowercase). Since we use Linux, create a symlink:
+  ```bash
+  ln -sf Interpolator.rs interpolator.rs
+  ```
+* Using direnv for local development.
 
 ### History
+* `K_SERVICE=1`: This environment variable is automatically set by Google Cloud Run and triggers cloud-specific configuration.
+* Had to downgrade on local system (SteamOS) to Python 3.12 from 3.13 for rendering to work due to OSMesa issue.
+* Conda Mayavi installation took a lot of time, so we switched to PyVista.
+* Tried Cloud Run Jobs and Cloud Run Service before settling on Cloud Batch.
 
-* `K_SERVICE=1` This environment variable is automatically set by Google Cloud Run and triggers cloud-specific configuration:
-history:
-* Had to downgrade on local system steamos to 3.12 python from 3.13 for rendering to work due to osmessa issue
-* Conda mayavi installation  took a lot of time and we switched to pyvista
-* tried cloud run jobs and  cloud run service before settling for cloud batch run
-
-
-### OAuth Dev Setup Notes:
-  * OAUTH_CLIENT_ID and OAUTH_CLIENT_SECRET for dev are set as Cloud Run environment variables.
-  * The authorized redirect URI for dev is `https://citb4-dev-<YOUR_PROJECT_NUMBER>.europe-west1.run.app/authorize`.
-  * Replace `<YOUR_PROJECT_NUMBER>` with your GCP project number (found via `gcloud projects describe PROJECT_ID --format='value(projectNumber)'`).
+### OAuth Dev Setup Notes
+* `OAUTH_CLIENT_ID` and `OAUTH_CLIENT_SECRET` for dev are set as Cloud Run environment variables.
+* The authorized redirect URI for dev is `https://citb4-dev-<YOUR_PROJECT_NUMBER>.europe-west1.run.app/authorize`.
+* Replace `<YOUR_PROJECT_NUMBER>` with your GCP project number (found via `gcloud projects describe PROJECT_ID --format='value(projectNumber)'`).
