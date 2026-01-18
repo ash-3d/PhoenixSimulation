@@ -3,9 +3,10 @@ This project is based on [research work](https://doi.org/10.3390/ma13214985) don
 This project adds to their numerical model written in Rust: UI, visualization of the printing process, full GCP pipeline, optimized for speed and graphics rendering.
 Most of the project was made using AI-assisted coding.
 
-<video src="media/landing_vid.mp4" controls width="100%"></video>
-
-![Boat](media/boat.png)
+<p>
+  <img src="media/boat.png" alt="Boat" height="300">
+  <img src="media/landing_vid.gif" alt="Demo" height="300">
+</p>
 
 Further development ideas:
 * Thermal structural coupling analysis can be done using FEA simulation tools (e.g., Calculix) to understand the warping behaviour.
