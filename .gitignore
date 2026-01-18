@@ -1,0 +1,6 @@
+*temps.csv
+frames_filtered_active_only/*
+DES_thermal_simulation/outputfiles/
+DES_thermal_simulation/inputfiles/
+projects/
+.direnv

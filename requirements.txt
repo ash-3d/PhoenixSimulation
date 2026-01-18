@@ -1,0 +1,25 @@
+# Python dependencies for CITB4 PyVista
+# Tested with Python 3.13.5
+# Install with: uv pip install -r requirements.txt
+
+numpy==2.3.4
+scipy==1.16.3
+pandas==2.3.3
+matplotlib==3.10.7
+pyvista==0.46.4
+vtk==9.5.2
+tqdm==4.67.1
+flask==3.1.2
+werkzeug==3.1.3
+waitress==3.0.2
+blinker==1.9.0
+itsdangerous==2.2.0
+jinja2==3.1.6
+markupsafe==3.0.3
+authlib==1.3.2
+flask-session==0.8.0
+google-cloud-batch==0.17.28
+google-cloud-storage==2.17.0
+google-auth==2.36.0
+requests==2.32.3
+trimesh[easy]==4.6.3

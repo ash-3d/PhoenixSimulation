@@ -1,0 +1,1187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phoenix simulation manager</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: {% if is_dev %}#1a2e1a{% else %}#1a1a1a{% endif %};
+            color: #e0e0e0;
+        }
+        .container {
+            background-color: #2d2d2d;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+        h1, h4 {
+            text-align: center;
+        }
+        h1 {
+            color: #ffffff;
+        }
+        h2, h3 {
+            color: #e0e0e0;
+        }
+        .upload-section, .projects-section {
+            margin: 30px 0;
+            padding: 20px;
+            border: 1px solid #444;
+            border-radius: 5px;
+            background-color: #252525;
+        }
+        .form-group {
+            margin: 15px 0;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #e0e0e0;
+        }
+        input[type="text"], input[type="file"], input[type="number"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #555;
+            border-radius: 4px;
+            box-sizing: border-box;
+            background-color: #333;
+            color: #e0e0e0;
+        }
+        input[type="text"]:focus, input[type="file"]:focus, input[type="number"]:focus {
+            outline: none;
+            border-color: #007bff;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .download-btn {
+            background-color: #28a745;
+            padding: 5px 10px;
+            font-size: 14px;
+            text-decoration: none;
+            color: white;
+            border-radius: 3px;
+            display: inline-block;
+            margin: 5px 0;
+        }
+        .download-btn:hover {
+            background-color: #1e7e34;
+        }
+        .project-item {
+            background-color: #333;
+            margin: 10px 0;
+            padding: 15px;
+            border-radius: 5px;
+            border: 1px solid #444;
+        }
+        .file-list {
+            margin: 10px 0;
+            padding: 10px;
+            background-color: #2a2a2a;
+            border-radius: 3px;
+        }
+        .message {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .success { background-color: #1e4620; color: #9fdf9f; border: 1px solid #2d5a2d; }
+        .error { background-color: #4a1e1e; color: #f5a3a3; border: 1px solid #5a2d2d; }
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+            color: #e0e0e0;
+        }
+        small {
+            color: #b0b0b0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Phoenix simulation Manager</h1>
+        <p style="text-align: center; color: #888; font-size: 12px; margin-top: -10px;">
+            CITB4 v<code style="background-color: #444; padding: 2px 6px; border-radius: 3px;">{{ version }}</code>
+            | DES Thermal Simulation: <code style="background-color: #444; padding: 2px 6px; border-radius: 3px;">{{ des_version }}</code>
+            | Environment: <code style="background-color: {% if is_dev %}#2d5a2d{% else %}#5a2d2d{% endif %}; padding: 2px 6px; border-radius: 3px;">{{ environment }}</code>
+        </p>
+
+        <div style="text-align: center; margin: 15px 0; padding: 10px; background-color: #1e3a1e; border-radius: 5px; border: 1px solid #2d5a2d;">
+            <span style="color: #9fdf9f; font-size: 14px;">
+                Logged in as: <strong>{{ user_email }}</strong>
+            </span>
+            <a href="/logout" style="margin-left: 20px; padding: 5px 15px; background-color: #dc3545; color: white; text-decoration: none; border-radius: 4px; font-size: 13px;">Logout</a>
+        </div>
+
+        <div class="upload-section">
+            <h2>Upload Input Files</h2>
+            <form id="uploadForm" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label for="project_id">Project ID:</label>
+                    <input type="text" id="project_id" name="project_id" required 
+                           value="{{ random_project_id }}" placeholder="Enter a unique project identifier">
+                    <button type="button" onclick="generateNewId()" style="margin-top: 5px; padding: 5px 10px; font-size: 12px;">Generate New ID</button>
+                </div>
+                
+                <div class="form-group">
+                    <label>Material Selection:</label>
+                    <div style="margin: 10px 0;">
+                        <div style="margin: 5px 0;">
+                            <input type="radio" id="material_custom" name="material_type" value="custom" checked onchange="toggleMaterialInputs()">
+                            <label for="material_custom" style="display: inline; font-weight: normal; margin-left: 5px;">Custom (upload your own files)</label>
+                        </div>
+                        <div style="margin: 5px 0;">
+                            <input type="radio" id="material_abs" name="material_type" value="abs" onchange="toggleMaterialInputs()">
+                            <label for="material_abs" style="display: inline; font-weight: normal; margin-left: 5px;">ABS (pre-loaded)</label>
+                        </div>
+                        <div style="margin: 5px 0;">
+                            <input type="radio" id="material_pc" name="material_type" value="pc" onchange="toggleMaterialInputs()">
+                            <label for="material_pc" style="display: inline; font-weight: normal; margin-left: 5px;">PC (pre-loaded)</label>
+                        </div>
+                        <div style="margin: 5px 0;">
+                            <input type="radio" id="material_peek" name="material_type" value="peek" onchange="toggleMaterialInputs()">
+                            <label for="material_peek" style="display: inline; font-weight: normal; margin-left: 5px;">PEEK (pre-loaded)</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="border: 2px solid #007bff; border-radius: 8px; padding: 15px; margin: 20px 0; background-color: #1a2a3a;">
+                    <h3 style="margin-top: 0; color: #66b3ff;">Material Properties (dependent on material selection)</h3>
+                    <p style="margin: 10px 0; font-size: 14px; color: #b0b0b0;">
+                        <strong>Note:</strong> These files are only required when "Custom" material is selected.
+                        For pre-loaded materials (ABS, PC, PEEK), these properties are automatically loaded.
+                    </p>
+                    
+                    <div class="form-group">
+                        <label for="conductivity_file">Thermal Conductivity Data:</label>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <input type="file" id="conductivity_file" name="conductivity_file" accept=".csv" required style="flex: 1;">
+                            <button type="button" onclick="clearFile('conductivity_file')" style="background-color: #dc3545; padding: 5px 10px; font-size: 12px;">Remove</button>
+                        </div>
+                        <small>CSV file with thermal conductivity vs temperature data</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="heat_capacity_file">Specific Heat Capacity Data:</label>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <input type="file" id="heat_capacity_file" name="heat_capacity_file" accept=".csv" required style="flex: 1;">
+                            <button type="button" onclick="clearFile('heat_capacity_file')" style="background-color: #dc3545; padding: 5px 10px; font-size: 12px;">Remove</button>
+                        </div>
+                        <small>CSV file with specific heat capacity vs temperature data</small>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="config_file">Main Configuration File:</label>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <input type="file" id="config_file" name="config_file" accept=".txt" required style="flex: 1;">
+                        <button type="button" onclick="clearFile('config_file')" style="background-color: #dc3545; padding: 5px 10px; font-size: 12px;">Remove</button>
+                    </div>
+                    <small>TXT file with processing parameters and settings</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="gcode_file">G-code Toolpath File:</label>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <input type="file" id="gcode_file" name="gcode_file" accept=".gcode" required style="flex: 1;">
+                        <button type="button" onclick="clearFile('gcode_file')" style="background-color: #dc3545; padding: 5px 10px; font-size: 12px;">Remove</button>
+                    </div>
+                    <small>G-code file with 3D printing toolpath instructions</small>
+                </div>
+                <button type="submit">Upload Files</button>
+            </form>
+            <div class="loading" id="uploadLoading">Uploading files...</div>
+            <div id="uploadMessage"></div>
+        </div>
+
+        <div class="projects-section">
+            <h2>Projects</h2>
+            <button onclick="refreshProjects()">Refresh Projects</button>
+            <div class="loading" id="projectsLoading">Loading projects...</div>
+            <div id="projectsList">
+                {% if projects %}
+                    {% for project in projects %}
+                    <div class="project-item">
+                        <h3>Project: {{ project }}</h3>
+                        <a href="/download/{{ project }}" class="download-btn">Download Output Files</a>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p>No projects found. Upload files to create a project.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('uploadForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const projectId = document.getElementById('project_id').value;
+            const materialType = document.querySelector('input[name="material_type"]:checked').value;
+
+            // Get all files with their types
+            const fileInputs = {
+                'conductivity': document.getElementById('conductivity_file').files[0],
+                'config': document.getElementById('config_file').files[0],
+                'heat_capacity': document.getElementById('heat_capacity_file').files[0],
+                'gcode': document.getElementById('gcode_file').files[0]
+            };
+
+            // Filter out empty file inputs
+            const filesToUpload = {};
+            for (const [fileType, file] of Object.entries(fileInputs)) {
+                if (file) {
+                    filesToUpload[fileType] = file;
+                }
+            }
+
+            // Check if at least one file is selected
+            if (Object.keys(filesToUpload).length === 0) {
+                showMessage('Please select at least one file to upload.', 'error');
+                return;
+            }
+
+            if (!projectId.trim()) {
+                showMessage('Please enter a project ID.', 'error');
+                return;
+            }
+
+            document.getElementById('uploadLoading').style.display = 'block';
+            document.getElementById('uploadMessage').innerHTML = '';
+
+            try {
+                const uploadedFiles = {};
+
+                // Upload each file directly to GCS
+                for (const [fileType, file] of Object.entries(filesToUpload)) {
+                    showMessage(`Uploading ${file.name}...`, 'info');
+
+                    // Get signed URL for this file
+                    const urlResponse = await fetch('/get-upload-url', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            project_id: projectId,
+                            filename: file.name,
+                            file_type: fileType
+                        })
+                    });
+
+                    const urlData = await urlResponse.json();
+
+                    if (!urlResponse.ok) {
+                        throw new Error(urlData.error || 'Failed to get upload URL');
+                    }
+
+                    // If local mode, fall back to regular upload
+                    if (urlData.use_regular_upload) {
+                        // Fall back to old upload method for local development
+                        const formData = new FormData();
+                        formData.append('project_id', projectId);
+                        formData.append('material_type', materialType);
+                        for (const [ft, f] of Object.entries(filesToUpload)) {
+                            formData.append(`${ft}_file`, f);
+                        }
+
+                        const response = await fetch('/upload', {
+                            method: 'POST',
+                            body: formData
+                        });
+
+                        const data = await response.json();
+                        if (!response.ok) {
+                            throw new Error(data.error || 'Upload failed');
+                        }
+
+                        document.getElementById('uploadLoading').style.display = 'none';
+                        showMessage(data.message, 'success');
+                        if (data.material_type && data.project_id) {
+                            localStorage.setItem(`material_type_${data.project_id}`, data.material_type);
+                        }
+                        document.getElementById('uploadForm').reset();
+                        refreshProjects();
+                        return;
+                    }
+
+                    // Upload directly to GCS using signed URL
+                    const uploadResponse = await fetch(urlData.upload_url, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/octet-stream'
+                        },
+                        body: file
+                    });
+
+                    if (!uploadResponse.ok) {
+                        throw new Error(`Failed to upload ${file.name}: ${uploadResponse.statusText}`);
+                    }
+
+                    uploadedFiles[fileType] = file.name;
+                }
+
+                // Finalize upload - move files to final location
+                showMessage('Finalizing upload...', 'info');
+                const finalizeResponse = await fetch('/finalize-upload', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        project_id: projectId,
+                        material_type: materialType,
+                        uploaded_files: uploadedFiles
+                    })
+                });
+
+                const finalizeData = await finalizeResponse.json();
+
+                if (!finalizeResponse.ok) {
+                    throw new Error(finalizeData.error || 'Failed to finalize upload');
+                }
+
+                document.getElementById('uploadLoading').style.display = 'none';
+                showMessage(finalizeData.message, 'success');
+
+                // Save material_type to localStorage for later use when running stages
+                if (finalizeData.material_type && finalizeData.project_id) {
+                    localStorage.setItem(`material_type_${finalizeData.project_id}`, finalizeData.material_type);
+                }
+
+                document.getElementById('uploadForm').reset();
+                refreshProjects();
+
+            } catch (error) {
+                document.getElementById('uploadLoading').style.display = 'none';
+                showMessage('Upload failed: ' + error.message, 'error');
+                console.error('Upload error:', error);
+            }
+        });
+        
+        function showMessage(message, type) {
+            const messageDiv = document.getElementById('uploadMessage');
+            messageDiv.innerHTML = `<div class="message ${type}">${message}</div>`;
+        }
+        
+        function refreshProjects() {
+            document.getElementById('projectsLoading').style.display = 'block';
+
+            // Save current timestep and mask parameter values before refresh
+            const timestepValues = {};
+            const maskParams = {};
+            document.querySelectorAll('[id^="timestep_"]').forEach(input => {
+                const projectId = input.id.replace('timestep_', '');
+                timestepValues[projectId] = input.value;
+            });
+            ['tg', 'dHigh', 'dLow', 'time_s'].forEach(param => {
+                document.querySelectorAll(`[id^="${param}_"]`).forEach(input => {
+                    const projectId = input.id.replace(`${param}_`, '');
+                    if (!maskParams[projectId]) maskParams[projectId] = {};
+                    maskParams[projectId][param] = input.value;
+                });
+            });
+
+            fetch('/projects')
+            .then(response => response.json())
+            .then(projects => {
+                document.getElementById('projectsLoading').style.display = 'none';
+                const projectsList = document.getElementById('projectsList');
+                
+                if (projects.length === 0) {
+                    projectsList.innerHTML = '<p>No projects found. Upload files to create a project.</p>';
+                    return;
+                }
+                
+                let html = '';
+                projects.forEach(project => {
+                    html += `
+                        <div class="project-item">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                <h3 style="text-align: left;">Project: ${project.id}</h3>
+                                <div style="display: flex; gap: 8px;">
+                                    <button id="rename-btn-${project.id}"
+                                            onclick="renameProject('${project.id}')"
+                                            style="padding: 6px 12px; background-color: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px;">
+                                        ✏️ Rename
+                                    </button>
+                                    <button id="delete-btn-${project.id}"
+                                            onclick="deleteProject('${project.id}')"
+                                            style="padding: 6px 12px; background-color: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px;">
+                                        🗑️ Delete
+                                    </button>
+                                </div>
+                            </div>
+                            <div style="margin: 15px 0;">
+                                <h4 style="margin: 0;">Pipeline Status:</h4>
+                    `;
+                    
+                    // Add pipeline status for each stage with integrated run buttons
+                    const stages = [
+                        {
+                            statusKey: 'frame_generator_input',  // Check folder status
+                            action: 'rust_simulation',
+                            label: '1. Client Input → Simulation data (rust code - DES)',
+                            buttonText: '▶',
+                        },
+                        {
+                            statusKey: 'animation',  // Check animation file status
+                            action: 'visualization',
+                            label: '2. Simulation data → visualization + animation',
+                            buttonText: '▶',
+                        },
+                        {
+                            statusKey: 'masks',  // Check masks file status
+                            action: 'mask_generation',
+                            label: '3. Generate Hot/Cold Masks',
+                            buttonText: '▶',
+                        }
+                    ];
+
+                    stages.forEach(stage => {
+                        const stageStatus = project.status[stage.statusKey] || {};
+                        const stageState = stageStatus.state || 'not_run';
+
+                        // Determine icon and color based on state
+                        let statusIcon = '';
+                        let bgColor = '';
+                        let borderColor = '';
+                        let textColor = '';
+
+                        switch(stageState) {
+                            case 'succeeded':
+                                statusIcon = '✅';
+                                bgColor = '#1e4620';
+                                borderColor = '#2d5a2d';
+                                textColor = '#9fdf9f';
+                                break;
+                            case 'failed':
+                                statusIcon = '❌';
+                                bgColor = '#4a1e1e';
+                                borderColor = '#5a2d2d';
+                                textColor = '#f5a3a3';
+                                break;
+                            case 'running':
+                                statusIcon = '⏳';
+                                bgColor = '#3a3420';
+                                borderColor = '#5a5420';
+                                textColor = '#f5d542';
+                                break;
+                            case 'not_run':
+                            default:
+                                statusIcon = '';
+                                bgColor = '#2a2a2a';
+                                borderColor = '#444';
+                                textColor = '#999';
+                                break;
+                        }
+
+                        const fileCount = stageStatus.count || (stageStatus.files ? stageStatus.files.length : 0);
+
+                        // Get timing for this stage
+                        const timing = project.status.timing && project.status.timing[stage.action];
+                        const timingText = timing ? `⏱️ ${timing.duration_formatted}` : '';
+
+                        const downloadButtons = [];
+
+                        // Show download buttons, but grey them out if stage hasn't succeeded
+                        const isStageSucceeded = stageState === 'succeeded';
+                        const disabledStyle = isStageSucceeded ? '' : 'opacity: 0.4; cursor: not-allowed; pointer-events: none;';
+
+                        // Stage-specific download buttons
+                        if (stage.action === 'rust_simulation') {
+                            // Check if input files exist (rust_code_input folder)
+                            const inputConfigExists = true; // Always show if project exists
+                            downloadButtons.push(`
+                                <a href="/download/${project.id}/input_config"
+                                   class="download-btn"
+                                   style="min-width: 120px; text-align: center; padding: 8px 12px; font-size: 13px; text-decoration: none; white-space: nowrap; background-color: #6c757d; display: inline-block;">
+                                    ⬇️ Input Config
+                                </a>
+                            `);
+                            const simDataExists = project.status.frame_generator_input && project.status.frame_generator_input.exists;
+                            downloadButtons.push(`
+                                <a href="${simDataExists ? '/download/' + project.id + '/frame_generator_input' : '#'}"
+                                   class="download-btn"
+                                   style="min-width: 120px; text-align: center; padding: 8px 12px; font-size: 13px; text-decoration: none; white-space: nowrap; background-color: #17a2b8; display: inline-block; ${simDataExists ? '' : disabledStyle}">
+                                    ⬇️ Simulation Data
+                                </a>
+                            `);
+                        } else if (stage.action === 'visualization') {
+                            const framesExist = project.status.frames_filtered_active_only && project.status.frames_filtered_active_only.exists;
+                            const animationExists = project.status.animation && project.status.animation.exists;
+                            downloadButtons.push(`
+                                <a href="${framesExist ? '/download/' + project.id + '/frames_filtered_active_only' : '#'}"
+                                   class="download-btn"
+                                   style="min-width: 120px; text-align: center; padding: 8px 12px; font-size: 13px; text-decoration: none; white-space: nowrap; background-color: #17a2b8; display: inline-block; ${framesExist ? '' : disabledStyle}">
+                                    ⬇️ Frames
+                                </a>
+                            `);
+                            downloadButtons.push(`
+                                <a href="${animationExists ? '/download/' + project.id + '/animation' : '#'}"
+                                   class="download-btn"
+                                   style="min-width: 120px; text-align: center; padding: 8px 12px; font-size: 13px; text-decoration: none; white-space: nowrap; background-color: #28a745; display: inline-block; ${animationExists ? '' : disabledStyle}">
+                                    ⬇️ Animation${project.status.animation_file_size_formatted && animationExists ? ' (' + project.status.animation_file_size_formatted + ')' : ''}
+                                </a>
+                            `);
+                        } else if (stage.action === 'mask_generation') {
+                            const masksExist = project.status.masks && project.status.masks.exists;
+                            downloadButtons.push(`
+                                <a href="${masksExist ? '/download/' + project.id + '/mask' : '#'}"
+                                   class="download-btn"
+                                   style="min-width: 120px; text-align: center; padding: 8px 12px; font-size: 13px; text-decoration: none; white-space: nowrap; background-color: #6c757d; display: inline-block; ${masksExist ? '' : disabledStyle}">
+                                    ⬇️ Mask PNG
+                                </a>
+                            `);
+                            downloadButtons.push(`
+                                <a href="${masksExist ? '/download/' + project.id + '/mask3mf' : '#'}"
+                                   class="download-btn"
+                                   style="min-width: 120px; text-align: center; padding: 8px 12px; font-size: 13px; text-decoration: none; white-space: nowrap; background-color: #fd7e14; display: inline-block; ${masksExist ? '' : disabledStyle}">
+                                    ⬇️ Mask 3MF
+                                </a>
+                            `);
+                        }
+
+                        html += `
+                            <div style="margin: 8px 0; padding: 12px; background-color: ${bgColor}; border-radius: 4px; border: 1px solid ${borderColor};">
+                                <div style="display: flex; flex-direction: column; gap: 12px;">
+                                    <div style="display: flex; flex-direction: column; gap: 4px;">
+                                        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                                            <strong style="color: ${textColor};">${statusIcon ? statusIcon + ' ' : ''}${stage.label}</strong>
+                                            ${timingText ? `<span style="font-size: 13px; color: #b0b0b0;">${timingText}</span>` : ''}
+                                        </div>
+                                        <small style="display: block; color: #b0b0b0;">${stageStatus.description}</small>
+                                        <span style="font-size: 12px; display: block; color: #999;">Files: ${fileCount}</span>
+                                    </div>
+                                    <div style="display: flex; flex-direction: column; gap: 8px; width: 100%;">
+                                        ${stage.action ? `
+                                            <div style="display: flex; justify-content: flex-end; width: 100%;">
+                                                <button onclick="runPipelineStage('${project.id}', '${stage.action}')"
+                                                        style="min-width: 48px; padding: 8px 12px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; white-space: nowrap;">
+                                                    ${stage.buttonText}
+                                                </button>
+                                            </div>
+                                        ` : ''}
+                                        ${downloadButtons.length ? `
+                                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px; width: 100%;">
+                                                ${downloadButtons.join('')}
+                                            </div>
+                                        ` : ''}
+                                    </div>
+                                </div>
+                                ${stage.action === 'visualization' ? `
+                                    <div style="margin-top: 12px; padding: 10px; background-color: rgba(0,0,0,0.3); border-radius: 4px; border: 1px solid #555;">
+                                        <label style="display: block; font-size: 13px; margin-bottom: 5px; font-weight: bold; color: #e0e0e0;">
+                                            Timestep Resolution (seconds):
+                                        </label>
+                                        <input type="number"
+                                               id="timestep_${project.id}"
+                                               value="1"
+                                               min="0.01"
+                                               step="0.1"
+                                               style="width: 120px; padding: 6px; border: 1px solid #666; border-radius: 3px; font-size: 14px; background-color: #333; color: #e0e0e0;">
+                                        <small style="display: block; margin-top: 5px; color: #b0b0b0; font-size: 12px;">
+                                            Time interval between generated frames
+                                        </small>
+                                    </div>
+                                ` : ''}
+                                ${stage.action === 'mask_generation' ? `
+                                    <div style="margin-top: 12px; padding: 10px; background-color: rgba(0,0,0,0.3); border-radius: 4px; border: 1px solid #555;">
+                                        <label style="display: block; font-size: 13px; margin-bottom: 8px; font-weight: bold; color: #e0e0e0;">
+                                            Hot/Cold Mask Parameters:
+                                        </label>
+                                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                                            <div>
+                                                <label style="display: block; font-size: 12px; margin-bottom: 3px; color: #b0b0b0;">Tg (°C):</label>
+                                                <input type="number"
+                                                       id="tg_${project.id}"
+                                                       value="105"
+                                                       step="0.1"
+                                                       style="width: 100%; padding: 6px; border: 1px solid #666; border-radius: 3px; font-size: 14px; background-color: #333; color: #e0e0e0;">
+                                            </div>
+                                            <div>
+                                                <label style="display: block; font-size: 12px; margin-bottom: 3px; color: #b0b0b0;">ΔHigh (°C):</label>
+                                                <input type="number"
+                                                       id="dHigh_${project.id}"
+                                                       value="15"
+                                                       step="0.1"
+                                                       style="width: 100%; padding: 6px; border: 1px solid #666; border-radius: 3px; font-size: 14px; background-color: #333; color: #e0e0e0;">
+                                            </div>
+                                            <div>
+                                                <label style="display: block; font-size: 12px; margin-bottom: 3px; color: #b0b0b0;">ΔLow (°C):</label>
+                                                <input type="number"
+                                                       id="dLow_${project.id}"
+                                                       value="45"
+                                                       step="0.1"
+                                                       style="width: 100%; padding: 6px; border: 1px solid #666; border-radius: 3px; font-size: 14px; background-color: #333; color: #e0e0e0;">
+                                            </div>
+                                            <div>
+                                                <label style="display: block; font-size: 12px; margin-bottom: 3px; color: #b0b0b0;">Time (s, -1=last):</label>
+                                                <input type="number"
+                                                       id="time_s_${project.id}"
+                                                       value="-1"
+                                                       step="0.1"
+                                                       style="width: 100%; padding: 6px; border: 1px solid #666; border-radius: 3px; font-size: 14px; background-color: #333; color: #e0e0e0;">
+                                            </div>
+                                        </div>
+                                        <small style="display: block; margin-top: 8px; color: #b0b0b0; font-size: 11px;">
+                                            Mask shows hot (red) and cold (blue) regions at specified time
+                                        </small>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        `;
+                    });
+
+                    html += `
+                            </div>
+                            <div id="pipeline-status-${project.id}" style="margin: 10px 0; padding: 10px; min-height: 20px; border-radius: 4px;">
+                                <!-- Status messages appear here -->
+                            </div>
+                            <div id="error-display-${project.id}" style="margin: 10px 0;">
+                                <!-- Error messages appear here -->
+                            </div>
+                            <div style="margin: 15px 0;">
+                                <button id="full-pipeline-btn-${project.id}" onclick="runFullPipeline('${project.id}')"
+                                        style="width: 100%; padding: 12px 20px; background-color: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 16px;">
+                                    🚀 Run Full Pipeline
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                });
+                projectsList.innerHTML = html;
+
+                // Restore saved timestep and mask parameter values after HTML regeneration
+                Object.keys(timestepValues).forEach(projectId => {
+                    const input = document.getElementById(`timestep_${projectId}`);
+                    if (input) {
+                        input.value = timestepValues[projectId];
+                    }
+                });
+                Object.keys(maskParams).forEach(projectId => {
+                    Object.keys(maskParams[projectId]).forEach(param => {
+                        const input = document.getElementById(`${param}_${projectId}`);
+                        if (input) {
+                            input.value = maskParams[projectId][param];
+                        }
+                    });
+                });
+
+                // Check for errors in each project
+                projects.forEach(project => {
+                    checkForErrors(project.id);
+                });
+            })
+            .catch(error => {
+                document.getElementById('projectsLoading').style.display = 'none';
+                console.error('Error fetching projects:', error);
+            });
+        }
+        
+        function generateNewId() {
+            // Generate a new random 4-character alphanumeric ID
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+            let result = '';
+            for (let i = 0; i < 4; i++) {
+                result += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            document.getElementById('project_id').value = result;
+        }
+        
+        function clearFile(fileInputId) {
+            document.getElementById(fileInputId).value = '';
+        }
+        
+        function toggleMaterialInputs() {
+            const isCustomSelected = document.getElementById('material_custom').checked;
+            const conductivityFile = document.getElementById('conductivity_file');
+            const heatCapacityFile = document.getElementById('heat_capacity_file');
+            const conductivityDiv = conductivityFile.closest('.form-group');
+            const heatCapacityDiv = heatCapacityFile.closest('.form-group');
+            
+            if (isCustomSelected) {
+                // Enable custom file uploads
+                conductivityFile.disabled = false;
+                heatCapacityFile.disabled = false;
+                conductivityFile.required = true;
+                heatCapacityFile.required = true;
+                conductivityDiv.style.opacity = '1';
+                heatCapacityDiv.style.opacity = '1';
+            } else {
+                // Disable custom file uploads for pre-loaded materials
+                conductivityFile.disabled = true;
+                heatCapacityFile.disabled = true;
+                conductivityFile.required = false;
+                heatCapacityFile.required = false;
+                conductivityFile.value = '';
+                heatCapacityFile.value = '';
+                conductivityDiv.style.opacity = '0.5';
+                heatCapacityDiv.style.opacity = '0.5';
+            }
+        }
+        
+        let progressPollingInterval = null;
+
+
+        function renameProject(projectId) {
+            const renameBtn = document.getElementById(`rename-btn-${projectId}`);
+
+            // Prompt user for new project name
+            const newName = prompt(`Enter new name for project "${projectId}":`, projectId);
+
+            // User cancelled or entered empty name
+            if (!newName || newName.trim() === '') {
+                return;
+            }
+
+            // User entered the same name
+            if (newName.trim() === projectId) {
+                alert('The new name is the same as the current name.');
+                return;
+            }
+
+            // Disable button while processing
+            renameBtn.disabled = true;
+            renameBtn.style.opacity = '0.6';
+            renameBtn.innerHTML = '⏳ Renaming...';
+
+            fetch(`/project/${projectId}/rename`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ new_name: newName.trim() })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Refresh the projects list to show the new name
+                    refreshProjects();
+                } else {
+                    alert(`Failed to rename project: ${data.error}`);
+                    renameBtn.disabled = false;
+                    renameBtn.style.opacity = '1';
+                    renameBtn.innerHTML = '✏️ Rename';
+                }
+            })
+            .catch(error => {
+                alert(`Failed to rename project: ${error.message}`);
+                renameBtn.disabled = false;
+                renameBtn.style.opacity = '1';
+                renameBtn.innerHTML = '✏️ Rename';
+            });
+        }
+
+        function deleteProject(projectId) {
+            const deleteBtn = document.getElementById(`delete-btn-${projectId}`);
+
+            // Check if this is the first click (confirmation needed)
+            if (deleteBtn.dataset.confirmDelete !== 'true') {
+                // First click - ask for confirmation
+                deleteBtn.style.backgroundColor = '#ffc107';
+                deleteBtn.innerHTML = '⚠️ Click again to confirm';
+                deleteBtn.dataset.confirmDelete = 'true';
+
+                // Reset after 3 seconds if user doesn't click again
+                setTimeout(() => {
+                    if (deleteBtn.dataset.confirmDelete === 'true') {
+                        deleteBtn.style.backgroundColor = '#dc3545';
+                        deleteBtn.innerHTML = '🗑️ Delete';
+                        deleteBtn.dataset.confirmDelete = 'false';
+                    }
+                }, 3000);
+
+                return;
+            }
+
+            // Second click - actually delete
+            deleteBtn.disabled = true;
+            deleteBtn.style.opacity = '0.6';
+            deleteBtn.innerHTML = '⏳ Deleting...';
+
+            fetch(`/project/${projectId}/delete`, {
+                method: 'DELETE'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Remove the project from the UI
+                    refreshProjects();
+                } else {
+                    alert(`Failed to delete project: ${data.error}`);
+                    deleteBtn.disabled = false;
+                    deleteBtn.style.opacity = '1';
+                    deleteBtn.style.backgroundColor = '#dc3545';
+                    deleteBtn.innerHTML = '🗑️ Delete';
+                    deleteBtn.dataset.confirmDelete = 'false';
+                }
+            })
+            .catch(error => {
+                alert(`Failed to delete project: ${error.message}`);
+                deleteBtn.disabled = false;
+                deleteBtn.style.opacity = '1';
+                deleteBtn.style.backgroundColor = '#dc3545';
+                deleteBtn.innerHTML = '🗑️ Delete';
+                deleteBtn.dataset.confirmDelete = 'false';
+            });
+        }
+
+        function checkForErrors(projectId) {
+            fetch(`/project/${projectId}/error`)
+                .then(response => response.json())
+                .then(data => {
+                    const errorDiv = document.getElementById(`error-display-${projectId}`);
+                    if (!errorDiv) return;
+
+                    if (data.has_error) {
+                        const timestamp = new Date(data.timestamp).toLocaleString();
+                        // Truncate error message if too long
+                        const maxLength = 500;
+                        let errorPreview = data.error;
+                        let isTruncated = false;
+                        if (errorPreview.length > maxLength) {
+                            errorPreview = errorPreview.substring(0, maxLength) + '...';
+                            isTruncated = true;
+                        }
+
+                        const errorHtml = `
+                            <div style="background-color: #4a1e1e; border: 1px solid #5a2d2d; border-left: 4px solid #dc3545; padding: 12px; border-radius: 4px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                    <strong style="color: #f5a3a3;">❌ Error in ${data.stage.replace('_', ' ')}</strong>
+                                    <span style="font-size: 12px; color: #b0b0b0;">${timestamp}</span>
+                                </div>
+                                <div style="background-color: rgba(0,0,0,0.3); padding: 10px; border-radius: 3px; margin: 8px 0; font-family: monospace; font-size: 12px; color: #f5a3a3; white-space: pre-wrap; word-break: break-word; max-height: 200px; overflow-y: auto;">
+${errorPreview}
+                                </div>
+                                ${isTruncated ? '<div style="color: #b0b0b0; font-size: 12px; margin-bottom: 8px;">Error message truncated. Download full error details below.</div>' : ''}
+                                <a href="/download/${projectId}/error"
+                                   class="download-btn"
+                                   style="background-color: #6c757d; padding: 6px 12px; font-size: 12px; display: inline-block;">
+                                    ⬇️ Download Full Error Details
+                                </a>
+                            </div>
+                        `;
+                        errorDiv.innerHTML = errorHtml;
+                    } else {
+                        errorDiv.innerHTML = '';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error checking for errors:', error);
+                });
+        }
+
+        function pollProgress(projectId, stage) {
+            fetch(`/project/${projectId}/progress`)
+                .then(response => response.json())
+                .then(data => {
+                    const statusDiv = document.getElementById(`pipeline-status-${projectId}`);
+
+                    // Check job status
+                    const jobStatus = data.job_status || 'UNKNOWN';
+
+                    // Build progress HTML
+                    let progressHtml = '';
+                    if (data.percentage !== undefined && data.percentage > 0) {
+                        progressHtml = `
+                            <div style="margin: 10px 0;">
+                                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                                    <div style="flex: 1; background-color: #2a2a2a; border-radius: 4px; height: 24px; position: relative; overflow: hidden; border: 1px solid #444;">
+                                        <div style="background-color: #007bff; height: 100%; width: ${data.percentage}%; transition: width 0.3s;"></div>
+                                        <span style="position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); font-weight: bold; color: #e0e0e0;">
+                                            ${data.percentage}% (${data.current}/${data.total})
+                                        </span>
+                                    </div>
+                                </div>
+                                <small style="color: #b0b0b0; display: block;">${data.message || 'Processing...'}</small>
+                            </div>
+                        `;
+                    } else {
+                        progressHtml = `<small style="color: #b0b0b0;">${data.message || 'Processing...'}</small>`;
+                    }
+
+                    statusDiv.innerHTML = progressHtml;
+
+                    // If job succeeded, stop polling and refresh
+                    if (jobStatus === 'SUCCEEDED') {
+                        if (progressPollingInterval) {
+                            clearInterval(progressPollingInterval);
+                            progressPollingInterval = null;
+                        }
+                        statusDiv.innerHTML = '<span style="color: #28a745;">✅ Job completed successfully</span>';
+                        setTimeout(() => refreshProjects(), 1000);
+                    }
+                    // If job failed, stop polling and show error
+                    else if (jobStatus === 'FAILED') {
+                        if (progressPollingInterval) {
+                            clearInterval(progressPollingInterval);
+                            progressPollingInterval = null;
+                        }
+                        statusDiv.innerHTML = '<span style="color: #dc3545;">❌ Job failed</span>';
+                        checkForErrors(projectId);
+                        setTimeout(() => refreshProjects(), 1000);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error polling progress:', error);
+                });
+        }
+
+        function runPipelineStage(projectId, stage) {
+            const statusDiv = document.getElementById(`pipeline-status-${projectId}`);
+            statusDiv.innerHTML = '<span style="color: #007bff;">⏳ Running stage...</span>';
+
+            // Clear any previous error display when starting a new run
+            const errorDiv = document.getElementById(`error-display-${projectId}`);
+            if (errorDiv) errorDiv.innerHTML = '';
+
+            // Find the stage box and change to yellow - SCOPED TO THIS PROJECT
+            // First, find the project item for this projectId
+            const projectItems = document.querySelectorAll('.project-item');
+            let targetProjectItem = null;
+
+            projectItems.forEach(item => {
+                const projectHeader = item.querySelector('h3');
+                if (projectHeader && projectHeader.textContent.includes(projectId)) {
+                    targetProjectItem = item;
+                }
+            });
+
+            let targetBox = null;
+            if (targetProjectItem) {
+                // Now get stage boxes only within this project
+                const stageBoxes = targetProjectItem.querySelectorAll('div[style*="background-color"]');
+
+                // Map stage actions to their corresponding folder positions (0-indexed)
+                const stageMap = {
+                    'rust_simulation': 0,      // frame_generator_input (output of rust)
+                    'frame_generation': 1,     // frames_filtered_active_only (output of frame generation)
+                    'animation_creation': 2    // final_output (output of animation)
+                };
+
+                const boxIndex = stageMap[stage];
+                if (boxIndex !== undefined && stageBoxes[boxIndex]) {
+                    targetBox = stageBoxes[boxIndex];
+                    targetBox.dataset.originalBgColor = targetBox.style.backgroundColor;
+                    targetBox.style.backgroundColor = '#3a3420'; // Dark yellow
+                    targetBox.style.borderLeft = '4px solid #ffc107';
+                }
+            }
+
+            // Find and disable the button, add hourglass
+            const buttons = document.querySelectorAll(`button[onclick*="${stage}"]`);
+            buttons.forEach(button => {
+                if (button.onclick && button.onclick.toString().includes(projectId) && button.onclick.toString().includes(stage)) {
+                    button.disabled = true;
+                    button.style.opacity = '0.6';
+                    button.style.cursor = 'wait';
+                    const originalText = button.innerHTML;
+                    button.innerHTML = '⏳ Running...';
+                    button.dataset.originalText = originalText;
+                }
+            });
+
+            // Start polling progress for all Cloud Batch stages
+            if (progressPollingInterval) clearInterval(progressPollingInterval);
+            progressPollingInterval = setInterval(() => pollProgress(projectId, stage), 2000);
+
+            // Prepare request body with parameters
+            const requestBody = {};
+
+            // Include material_type from localStorage (stored during upload)
+            const materialType = localStorage.getItem(`material_type_${projectId}`);
+            if (materialType) {
+                requestBody.material_type = materialType;
+            }
+
+            // If visualization stage, include timestep
+            if (stage === 'visualization') {
+                const timestepInput = document.getElementById(`timestep_${projectId}`);
+                if (timestepInput) {
+                    requestBody.timestep = parseFloat(timestepInput.value) || 1.0;
+                }
+            }
+
+            // If mask_generation stage, include mask parameters
+            if (stage === 'mask_generation') {
+                const tgInput = document.getElementById(`tg_${projectId}`);
+                const dHighInput = document.getElementById(`dHigh_${projectId}`);
+                const dLowInput = document.getElementById(`dLow_${projectId}`);
+                const timeSInput = document.getElementById(`time_s_${projectId}`);
+
+                if (tgInput) {
+                    requestBody.tg = parseFloat(tgInput.value) || 105;
+                }
+                if (dHighInput) {
+                    requestBody.dHigh = parseFloat(dHighInput.value) || 15;
+                }
+                if (dLowInput) {
+                    requestBody.dLow = parseFloat(dLowInput.value) || 45;
+                }
+                if (timeSInput) {
+                    requestBody.time_s = parseFloat(timeSInput.value) || -1;
+                }
+            }
+
+            fetch(`/project/${projectId}/run/${stage}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(requestBody)
+            })
+            .then(response => {
+                // Check if response is OK before parsing
+                if (!response.ok) {
+                    // Try to get error text
+                    return response.text().then(text => {
+                        throw new Error(`Server error (${response.status}): ${text.substring(0, 200)}`);
+                    });
+                }
+                // Parse JSON only if response is OK
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    // Job submitted successfully - keep polling progress
+                    statusDiv.innerHTML = `<span style="color: #ffc107;">⏳ ${data.message} - waiting for job to start...</span>`;
+                    // Progress polling is already running, so just wait for SUCCEEDED/FAILED
+                } else {
+                    // Job submission failed - stop polling and show error
+                    if (progressPollingInterval) {
+                        clearInterval(progressPollingInterval);
+                        progressPollingInterval = null;
+                    }
+                    statusDiv.innerHTML = `<span style="color: #dc3545;">❌ Error: ${data.error}</span>`;
+                    // Check for detailed error information
+                    checkForErrors(projectId);
+                    // Restore box color and re-enable button on error
+                    if (targetBox && targetBox.dataset.originalBgColor) {
+                        targetBox.style.backgroundColor = targetBox.dataset.originalBgColor;
+                        targetBox.style.borderLeft = '';
+                    }
+                    buttons.forEach(button => {
+                        if (button.dataset.originalText) {
+                            button.disabled = false;
+                            button.style.opacity = '1';
+                            button.style.cursor = 'pointer';
+                            button.innerHTML = button.dataset.originalText;
+                        }
+                    });
+                }
+            })
+            .catch(error => {
+                // Stop polling progress
+                if (progressPollingInterval) {
+                    clearInterval(progressPollingInterval);
+                    progressPollingInterval = null;
+                }
+
+                statusDiv.innerHTML = `<span style="color: #dc3545;">❌ Failed: ${error.message}</span>`;
+                // Check for detailed error information
+                checkForErrors(projectId);
+                // Restore box color and re-enable button on error
+                if (targetBox && targetBox.dataset.originalBgColor) {
+                    targetBox.style.backgroundColor = targetBox.dataset.originalBgColor;
+                    targetBox.style.borderLeft = '';
+                }
+                buttons.forEach(button => {
+                    if (button.dataset.originalText) {
+                        button.disabled = false;
+                        button.style.opacity = '1';
+                        button.style.cursor = 'pointer';
+                        button.innerHTML = button.dataset.originalText;
+                    }
+                });
+            });
+        }
+        
+        function runFullPipeline(projectId) {
+            const button = document.getElementById(`full-pipeline-btn-${projectId}`);
+
+            // Store original state
+            const originalText = button.innerHTML;
+            const originalBgColor = button.style.backgroundColor;
+
+            // Update button to show running state
+            button.disabled = true;
+            button.style.cursor = 'wait';
+            button.innerHTML = '⏳ Running Full Pipeline...';
+
+            // Clear any previous error display when starting a new run
+            const errorDiv = document.getElementById(`error-display-${projectId}`);
+            if (errorDiv) errorDiv.innerHTML = '';
+
+            fetch(`/project/${projectId}/run_all`, {
+                method: 'POST'
+            })
+            .then(response => {
+                // Check if response is OK before parsing
+                if (!response.ok) {
+                    return response.text().then(text => {
+                        throw new Error(`Server error (${response.status}): ${text.substring(0, 200)}`);
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    button.style.backgroundColor = '#28a745';
+                    button.innerHTML = '✅ Pipeline Complete';
+                    // Refresh project status after successful execution to restore all buttons
+                    setTimeout(() => {
+                        refreshProjects();
+                    }, 1500);
+                } else {
+                    button.style.backgroundColor = '#dc3545';
+                    button.innerHTML = `❌ Error: ${data.error}`;
+                    button.disabled = false;
+                    button.style.cursor = 'pointer';
+                    // Check for detailed error information
+                    checkForErrors(projectId);
+                    // Reset button after 5 seconds
+                    setTimeout(() => {
+                        button.innerHTML = originalText;
+                        button.style.backgroundColor = originalBgColor;
+                    }, 5000);
+                }
+            })
+            .catch(error => {
+                button.style.backgroundColor = '#dc3545';
+                button.innerHTML = `❌ Failed: ${error.message}`;
+                button.disabled = false;
+                button.style.cursor = 'pointer';
+                // Check for detailed error information
+                checkForErrors(projectId);
+                // Reset button after 5 seconds
+                setTimeout(() => {
+                    button.innerHTML = originalText;
+                    button.style.backgroundColor = originalBgColor;
+                    // Also refresh to ensure all other buttons are enabled
+                    refreshProjects();
+                }, 5000);
+            });
+        }
+        
+        // Auto-refresh projects on page load
+        window.addEventListener('load', function() {
+            refreshProjects();
+            toggleMaterialInputs(); // Initialize material input states
+        });
+    </script>
+</body>
+</html>

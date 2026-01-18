@@ -1,0 +1,5 @@
+There are different files in the output folder. Three of them are important for visualization:
+
+1. elementfile.csv -> This file has the list of hexahedral elements. The first column in each row is the element id. The following eight columns are the nodes in the element.
+2. nodefile.csv -> This file has the list of node coordinates. The first column in each row is the node id. The following three columns are the x, y, and z coordinates of the node.
+3. node_temps.csv-> This file has time and temperature data for each node. Each row has the temperature history of the node with node id corresponding to the row number. Every odd column in the row is the time and every even column is the corresponding temperature in Kelvins. The time temperature data is stored only if the temperature difference from previous timestep is greater than a prescribed value. By default the prescribed value is set as 1 Kelvin in the input file.

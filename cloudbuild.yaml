@@ -1,0 +1,86 @@
+# Cloud Build configuration with Docker layer caching
+# Deploys Cloud Run Service (UI) only
+# Processing is handled by Cloud Batch jobs (created dynamically, supports 128+ CPUs)
+# Multi-stage Dockerfile caches Rust compilation separately from Python code
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+  substitutionOption: ALLOW_LOOSE
+  machineType: 'E2_HIGHCPU_8'  # Faster build machine (8 vCPUs)
+
+steps:
+  # Pull previous image for cache reuse (speeds up subsequent builds)
+  - name: 'gcr.io/cloud-builders/docker'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        docker pull gcr.io/$PROJECT_ID/citb4:latest || exit 0
+
+  # Build with cache from previous image (reuses Rust compilation layer)
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '--cache-from'
+      - 'gcr.io/$PROJECT_ID/citb4:latest'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/citb4:$COMMIT_SHA'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/citb4:latest'
+      - '.'
+
+  # Push the image to Container Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'gcr.io/$PROJECT_ID/citb4:latest'
+
+  # Deploy Cloud Run Service (Flask UI - lightweight, always available)
+  # Branch "release" → PROD (citb4, prod-projects)
+  # Other branches → DEV (citb4-dev, citb4-projects-dev)
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: bash
+    args:
+      - '-c'
+      - |
+        if [ "$BRANCH_NAME" = "release" ]; then
+          SERVICE_NAME="citb4"
+          BUCKET="prod-projects"
+          ENV_VAR="PROD"
+        else
+          SERVICE_NAME="citb4-dev"
+          BUCKET="citb4-projects-dev"
+          ENV_VAR="DEV"
+        fi
+
+        echo "Deploying to $${SERVICE_NAME} (ENV=$${ENV_VAR}, bucket=$${BUCKET})"
+
+        gcloud run deploy "$${SERVICE_NAME}" \
+          --image=gcr.io/$PROJECT_ID/citb4:latest \
+          --region=europe-west1 \
+          --platform=managed \
+          --allow-unauthenticated \
+          --memory=2Gi \
+          --cpu=2 \
+          --timeout=300 \
+          --min-instances=0 \
+          --max-instances=5 \
+          --execution-environment=gen2 \
+          --update-env-vars=MODE=ui,GCP_PROJECT=$PROJECT_ID,ENV=$${ENV_VAR} \
+          --remove-volume=projects \
+          --add-volume=name=projects,type=cloud-storage,bucket=$${BUCKET} \
+          --add-volume-mount=volume=projects,mount-path=/app/projects
+
+  # Enable Cloud Batch API (if not already enabled)
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'services'
+      - 'enable'
+      - 'batch.googleapis.com'
+
+images:
+  - 'gcr.io/$PROJECT_ID/citb4:$COMMIT_SHA'
+  - 'gcr.io/$PROJECT_ID/citb4:latest'
+
+timeout: '1200s'
