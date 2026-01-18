@@ -1,10 +1,10 @@
-This work is based on Sunil Bhandaris R code in `https://github.com/linus131/DES_thermal_model`
-It's a wrapper around it using GCP with a UI, visualization of the printing process.
-Most of the project is made using AI assisted coding.
+This work is based on Sunil Bhandari's R code in `https://github.com/linus131/DES_thermal_model`.
+It's a wrapper around it using GCP with a UI and visualization of the printing process.
+Most of the project was made using AI-assisted coding.
 
 Further development ideas:
-* Thermal structural coupling analysis can be done using FEA similation tools (eg. Calculix) to understand the warping behaviour.
-* Save run costs by using spot/on demand based on  toolpath length  (longer runs=risk of interruptions in SPOT)
+* Thermal structural coupling analysis can be done using FEA simulation tools (e.g., Calculix) to understand the warping behaviour.
+* Save run costs by using spot/on-demand based on toolpath length (longer runs = risk of interruptions in SPOT).
 
 ## Project File Structure
 
