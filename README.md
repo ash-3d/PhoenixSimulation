@@ -1,5 +1,6 @@
-This work is based on Sunil Bhandari's R code in `https://github.com/linus131/DES_thermal_model`.
-It's a wrapper around it using GCP with a UI and visualization of the printing process.
+This work is based on [research work](https://doi.org/10.3390/ma13214985) done at University of Maine by Sunil Bhandari and Roberto Lopez-Anido in `https://github.com/linus131/DES_thermal_model`.
+
+This project is a wrapper around it using GCP with a UI and visualization of the printing process, optimized for speed and graphics rendering.
 Most of the project was made using AI-assisted coding.
 
 Further development ideas:
@@ -79,20 +80,21 @@ PhoenixSimulation/
 3. **Mask Generation** (`mask_generation` stage - optional, separate):
    - Input: `frame_generator_input/`
    - Output: `hot_cold_mask.png` + `hot_cold_mask.3mf` (at project root)
-   - Can be re-run with different parameters (Tg, dHigh, dLow, time_s) without re-rendering 
+   - Can be re-run with different parameters (Tg, dHigh, dLow, time_s) without re-rendering
 
-node_temps.csv is important. it contains node temperatures which we average into element temperatures. When temperatures don't change during a time step , it's not specified in the file. Also not all nodes are present, theres' a mismatch 
-Encountered bug:
+#### Notes on node_temps.csv
+`node_temps.csv` is important. It contains node temperatures which we average into element temperatures. When temperatures don't change during a time step, it's not specified in the file. Also, not all nodes are present; there's a mismatch.
 
-it produces temperature change for remaining timesteps but stopped printing new voxels                                                                                                                         
-citb4-projects-dev/200xboat_new/frame_generator_input
-eg:   
-  elementfile.csv:       2,034,830 lines
-  activation_times.csv:  2,034,830 lines 
-  elem_temps.csv:        2,034,830 lines 
-  nodefile.csv:          3,382,607 lines
-  node_temps.csv:        3,382,607 lines 
+**Known bug**: It produces temperature changes for remaining timesteps but stops printing new voxels.
 
+Example file sizes from `citb4-projects-dev/200xboat_new/frame_generator_input`:
+```
+elementfile.csv:       2,034,830 lines
+activation_times.csv:  2,034,830 lines
+elem_temps.csv:        2,034,830 lines
+nodefile.csv:          3,382,607 lines
+node_temps.csv:        3,382,607 lines
+```
 
 ### Progress Tracking
 - Progress tracked via `progress.json` file in each project directory (format: `{"current": 0, "total": 78, "percentage": 0, "message": "...", "job_status": "RUNNING", "stage": "..."}`)
@@ -118,7 +120,7 @@ podman run -e MODE=processor -e PROJECT_ID=TEST -e STAGE=rust_simulation citb4
 ```
 
 ### Deploy to Google Cloud (Automated)
-Deployment is automated via GitHub. push to main branch triggers auto-deploy via `cloudbuild.yaml`.
+Deployment is automated via GitHub. Push to main branch triggers auto-deploy via `cloudbuild.yaml`.
 
 ```bash
 # One-time setup: Create Cloud Storage bucket and enable APIs
@@ -191,7 +193,7 @@ podman exec -it <container_name> python app.py
 
 ## Environment Setup
 
-### Using uv 
+### Using uv
 ```bash
 # Activate the environment
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
