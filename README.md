@@ -228,3 +228,12 @@ uv pip install -r requirements.txt
 * `OAUTH_CLIENT_ID` and `OAUTH_CLIENT_SECRET` for dev are set as Cloud Run environment variables.
 * The authorized redirect URI for dev is `https://citb4-dev-<YOUR_PROJECT_NUMBER>.europe-west1.run.app/authorize`.
 * Replace `<YOUR_PROJECT_NUMBER>` with your GCP project number (found via `gcloud projects describe PROJECT_ID --format='value(projectNumber)'`).
+ 
+## 👥 Contributors
+- Ashidsha Jaleel
+- Jayakrishnan Nair
+
+## 🙏 Acknowledgements
+This project builds upon the Discrete-Event Simulation (DES) thermal model developed by  
+Sunil Bhandari and Roberto Lopez-Anido.
+
